@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-parameters-
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: message
+      value: 你好 世界！
+    - name: message2
+      value: 你好 世界2！
+    - name: message3
+      value: 你好 世界3！
+  templates:
+  - name: whalesay-caps1
+    inputs:
+      parameters:
+      - name: message       # parameter declaration
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+
+  - name: whalesay-caps2
+    inputs:
+      parameters:
+        - name: message2       # parameter declaration
+    container:
+      image: docker/whalesay
+      command: [ cowsay ]
+      args: ["{{inputs.parameters.message2}}"]
+
+  - name: whalesay-caps3
+    inputs:
+      parameters:
+        - name: message3       # parameter declaration
+    container:
+      image: docker/whalesay
+      command: [ cowsay ]
+      args: [ "{{inputs.parameters.message3}}" ]

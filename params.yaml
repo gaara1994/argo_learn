@@ -1,0 +1,5 @@
+# params.yaml
+message1: "This is the first message"
+message2: "This is the second message"
+count: 50
+threshold: 80.5
