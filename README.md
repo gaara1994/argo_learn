@@ -4,23 +4,34 @@
 
 ## 1.1 安装服务端
 
+1.下载项目文件
+
+```shell
+git clone https://github.com/argoproj/argo-workflows.git 
+```
+
 ```shell
 kubectl create namespace argo
 kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v3.5.4/install.yaml
 ```
 
 ```shell
-# 可以看到部署了两个服务
-yantao@ubuntu20:~$ kubectl get deployments -n argo
+# 可以看到部署了4个服务
+kubectl get deployments -n argo
+
 NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
-argo-server           1/1     1            1           7m1s
-workflow-controller   1/1     1            1           7m1s
+argo-server           1/1     1            1           3m11s
+httpbin               1/1     1            1           3m11s
+minio                 1/1     1            1           3m11s
+postgres              1/1     1            1           3m11s
+workflow-controller   1/1     1            1           3m11s
+
 ```
 
-本地学习，修改认证方式，免登录。参考 https://argo-workflows.readthedocs.io/en/release-3.5/argo-server-auth-mode/
+转发服务器端口以访问 UI
 
 ```
-argo server -n argo --auth-mode=server
+kubectl -n argo port-forward service/argo-server 2746:2746
 ```
 
 打开网页 https://localhost:2746
@@ -55,28 +66,23 @@ argo的使用方式
 ### 1.提交工作流（Workflow）
 
 ```shell
-argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/hello-world.yaml
+argo submit -n argo --watch test1.yaml
 ```
 
-上面使用的 `--watch` 标志将允许您观察工作流的运行情况以及它是否成功的状态。 工作流完成后，工作流上的监视将停止。`--watch`
+上面使用的 `--watch` 标志将允许您观察工作流的运行情况以及它是否成功的状态。 工作流完成后，工作流上的监视将停止。
 
 ```shell
-Name:                hello-world-dsbhf
+Name:                hello-world-2xbsg
 Namespace:           argo
 ServiceAccount:      unset (will run with the default ServiceAccount)
-Status:              Succeeded
-Conditions:          
- PodRunning          False
- Completed           True
-Created:             Fri Feb 23 16:43:07 +0800 (38 seconds ago)
-Started:             Fri Feb 23 16:43:07 +0800 (38 seconds ago)
-Finished:            Fri Feb 23 16:43:45 +0800 (now)
-Duration:            38 seconds
-Progress:            1/1
-ResourcesDuration:   0s*(1 cpu),13s*(100Mi memory)
+Status:              Running
+Created:             Tue Feb 27 11:11:55 +0800 (6 seconds ago)
+Started:             Tue Feb 27 11:11:55 +0800 (6 seconds ago)
+Duration:            6 seconds
+Progress:            0/1
 
 STEP                  TEMPLATE  PODNAME            DURATION  MESSAGE
- ✔ hello-world-dsbhf  whalesay  hello-world-dsbhf  29s 
+ ◷ hello-world-2xbsg  whalesay  hello-world-2xbsg  6s 
 ```
 
 
@@ -84,14 +90,10 @@ STEP                  TEMPLATE  PODNAME            DURATION  MESSAGE
 ### 2.列出当前工作流
 
 ```shell
-argo list
-```
+argo list -n argo
 
-```shell
-NAME                           STATUS    AGE   DURATION   PRIORITY   MESSAGE
-steps2-pqcwg                   Pending   23h   0s         0          
-steps-dcnmr                    Pending   23h   0s         0          
-hello-world-parameters-r2hvp   Pending   1d    0s         0  
+NAME                STATUS      AGE   DURATION   PRIORITY   MESSAGE
+hello-world-2xbsg   Succeeded   2m    36s        0 
 ```
 
 
@@ -99,19 +101,26 @@ hello-world-parameters-r2hvp   Pending   1d    0s         0
 ### 3.获取特定工作流信息
 
 ```shell
-argo get hello-world-parameters-r2hvp
+argo get -n argo hello-world-2xbsg 
 ```
 
 ```shell
-Name:                hello-world-parameters-r2hvp
-Namespace:           default
+Name:                hello-world-2xbsg
+Namespace:           argo
 ServiceAccount:      unset (will run with the default ServiceAccount)
-Status:              Pending
-Created:             Thu Feb 22 16:06:24 +0800 (1 day ago)
-Progress:            
-Parameters:          
-  message:           goodbye world
+Status:              Succeeded
+Conditions:          
+ PodRunning          False
+ Completed           True
+Created:             Tue Feb 27 11:11:55 +0800 (3 minutes ago)
+Started:             Tue Feb 27 11:11:55 +0800 (3 minutes ago)
+Finished:            Tue Feb 27 11:12:31 +0800 (2 minutes ago)
+Duration:            36 seconds
+Progress:            1/1
+ResourcesDuration:   0s*(1 cpu),11s*(100Mi memory)
 
+STEP                  TEMPLATE  PODNAME            DURATION  MESSAGE
+ ✔ hello-world-2xbsg  whalesay  hello-world-2xbsg  28s
 ```
 
 
@@ -119,7 +128,27 @@ Parameters:
 ### 4.**打印工作流日志**
 
 ```shell
-argo logs hello-world-parameters-r2hvp
+argo log -n argo hello-world-2xbsg 
+```
+
+```shell
+hello-world-2xbsg: time="2024-02-27T03:12:21.968Z" level=info msg="capturing logs" argo=true
+hello-world-2xbsg:  _________ 
+hello-world-2xbsg: < 参数1 >
+hello-world-2xbsg:  --------- 
+hello-world-2xbsg:     \
+hello-world-2xbsg:      \
+hello-world-2xbsg:       \     
+hello-world-2xbsg:                     ##        .            
+hello-world-2xbsg:               ## ## ##       ==            
+hello-world-2xbsg:            ## ## ## ##      ===            
+hello-world-2xbsg:        /""""""""""""""""___/ ===        
+hello-world-2xbsg:   ~~~ {~~ ~~~~ ~~~ ~~~~ ~~ ~ /  ===- ~~~   
+hello-world-2xbsg:        \______ o          __/            
+hello-world-2xbsg:         \    \        __/             
+hello-world-2xbsg:           \____\______/   
+hello-world-2xbsg: time="2024-02-27T03:12:22.980Z" level=info msg="sub-process exited" argo=true error="<nil>"
+
 ```
 
 
@@ -127,13 +156,13 @@ argo logs hello-world-parameters-r2hvp
 ### 5.删除工作流
 
 ```shell
-argo delete hello-world-parameters-r2hvp
+argo delete -n argo  hello-world-2xbsg
 ```
 
 删除所有工作流
 
 ```shell
-argo delete $(argo list -n argo --output name) -n argo
+argo delete -n argo $(argo list -n argo --output name)
 ```
 
 
@@ -143,8 +172,9 @@ argo delete $(argo list -n argo --output name) -n argo
 我们将使用下面的镜像来练习argo的使用
 
 ```shell
-yantao@ubuntu20:~/go/src/argo_learn$ sudo docker run docker/whalesay cowsay "这是传入的参数"
- _______________________ 
+sudo docker run docker/whalesay cowsay "这是传入的参数"
+
+_______________________ 
 < 这是传入的参数 >
  ----------------------- 
     \
@@ -221,7 +251,7 @@ spec:
 这将会在`argo`的空间下创建。如果不指定就会在`default`下创建。
 
 ```shell
-yantao@ubuntu20:~/go/src/argo_learn$ argo submit -n argo test1.yaml 
+argo submit -n argo test1.yaml 
 Name:                hello-world-8xf4t
 Namespace:           argo
 ServiceAccount:      unset (will run with the default ServiceAccount)
@@ -265,7 +295,8 @@ spec:
 这一次，模板采用一个名为 `{{inputs.parameters.message}}"` 的输入参数，该参数作为 传递给命令。为了引用参数，参数必须用双引号括起来，以转义 YAML 中的大括号。
 
 ```shell
-yantao@ubuntu20:~/go/src/argo_learn$ argo submit -n argo test2.yaml 
+argo submit -n argo test2.yaml 
+
 Name:                hello-world-parameters-2ztj4
 Namespace:           argo
 ServiceAccount:      unset (will run with the default ServiceAccount)
@@ -283,7 +314,8 @@ Parameters:
 argo CLI 提供了一种覆盖用于调用入口点的参数的便捷方法。下面的命令将会把 "你好 123" 绑定到 参数`message`	
 
 ```shell
-yantao@ubuntu20:~/go/src/argo_learn$ argo submit -n argo test2.yaml -p message="你好 123"
+argo submit -n argo test2.yaml -p message="你好 123"
+
 Name:                hello-world-parameters-qwljj
 Namespace:           argo
 ServiceAccount:      unset (will run with the default ServiceAccount)
@@ -383,7 +415,7 @@ spec:
 
 
 ```shell
-argo submit test3.yaml --entrypoint whalesay-caps2
+argo submit -n argo test3.yaml --entrypoint whalesay-caps2
 ```
 
 这样就运行whalesay-caps2了，1和3不会运行。
@@ -428,7 +460,7 @@ spec:
 
 ## 3.步骤(steps)
 
-
+在本例中，我们将了解如何创建多步骤工作流，如何在工作流规范中定义多个模板，以及如何创建嵌套工作流。
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -525,13 +557,103 @@ STEP            TEMPLATE           PODNAME                          DURATION  ME
 
 
 
+![image-20240227175252677](./assets/image-20240227175252677.png)
 
 
 
+## 4.有向无环图(DAG)
+
+作为指定[步骤]序列的替代方法，您可以通过指定每个任务的依赖关系将工作流定义为有向无环图 （DAG）。 对于复杂的工作流，DAG 可以更易于维护，并在运行任务时允许最大的并行性。
+
+在以下工作流中，步骤首先运行，因为它没有依赖项。 完成后，逐步并行运行。 最后，一旦完成，就会运行步骤。
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-diamond-
+spec:
+  entrypoint: diamond
+  templates:
+    - name: echo
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: alpine:3.7
+        command: [echo, "{{inputs.parameters.message}}"]
+    - name: diamond
+      dag:
+        tasks:
+          - name: A
+            template: echo
+            arguments:
+              parameters: [{name: message, value: A}]
+          - name: B
+            dependencies: [A]
+            template: echo
+            arguments:
+              parameters: [{name: message, value: B}]
+          - name: C
+            dependencies: [A]
+            template: echo
+            arguments:
+              parameters: [{name: message, value: C}]
+          - name: D
+            dependencies: [B, C]
+            template: echo
+            arguments:
+              parameters: [{name: message, value: D}]
+
+```
+
+1. **templates**: 定义了一系列可复用的任务模板。
+   - echo:
+     - `inputs.parameters.message`: 该模板接受一个名为 `message` 的输入参数。
+     - `container.image: alpine:3.7`: 使用 Alpine Linux 3.7 镜像作为容器的基础镜像。
+     - `command: [echo, "{{inputs.parameters.message}}"]`: 在容器中运行 `echo` 命令，并输出传递给任务的参数值。
+2. **diamond**:
+   - 这是一个 DAG 任务模板，它包含了一系列按特定依赖关系组织的任务节点（tasks）。
+   - **A**: 任务 A 使用 `echo` 模板，传入参数 `message` 的值为 "A"，它是整个 DAG 中没有依赖项的起始任务。
+   - **B**: 任务 B 依赖于任务 A，完成后再执行。同样使用 `echo` 模板，传入参数 `message` 的值为 "B"。
+   - **C**: 任务 C 与任务 B 类似，也依赖于任务 A，但不依赖任务 B，所以它将与任务 B 并行执行。
+   - **D**: 任务 D 依赖于任务 B 和任务 C，只有当任务 B 和任务 C 都完成后才会执行。同样使用 `echo` 模板，传入参数 `message` 的值为 "D"。
+
+```shell
+argo submit -n argo --watch test5.yaml
+```
+
+```shell
+STEP                  TEMPLATE  PODNAME                            DURATION  MESSAGE
+ ✔ dag-diamond-drcfd  diamond                                                  
+ ├─✔ A                echo      dag-diamond-drcfd-echo-2247298655  29s         
+ ├─✔ B                echo      dag-diamond-drcfd-echo-2264076274  22s         
+ ├─✔ C                echo      dag-diamond-drcfd-echo-2280853893  26s         
+ └─✔ D                echo      dag-diamond-drcfd-echo-2163410560  10s 
+```
+
+如图：
+
+![image-20240227175144994](./assets/image-20240227175144994.png)
 
 
 
+现在，我们已经对工作流规范的基本组件有了足够的了解。要查看其基本结构，请执行以下操作：
 
+- 包含元数据的 Kubernetes 标头
+- 规格体
+  - 使用可选参数的入口点调用
+  - 模板定义列表
+- 对于每个模板定义
+  - 模板的名称
+  - （可选）输入列表
+  - （可选）输出列表
+  - 容器调用（叶模板）或步骤列表
+    - 对于每个步骤，模板调用
+
+
+
+总而言之，工作流规范由一组 Argo 模板组成，其中每个模板都由一个可选的输入部分、一个可选的输出部分和一个容器调用或每个步骤调用另一个模板的步骤列表组成。
 
 
 
