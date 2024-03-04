@@ -11,8 +11,8 @@ git clone https://github.com/argoproj/argo-workflows.git
 ```
 
 ```shell
-kubectl create namespace argo
-kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v3.5.4/install.yaml
+argo-workflows/manifests$ kubectl create namespace argo
+argo-workflows/manifests$ kubectl apply -n argo -f quick-start-postgres.yaml
 ```
 
 ```shell
@@ -36,9 +36,19 @@ kubectl -n argo port-forward service/argo-server 2746:2746
 
 打开网页 https://localhost:2746
 
-
-
 卸载方式 `kubectl delete namespace argo`
+
+
+
+备注：
+
+```yaml
+image: minio/minio:RELEASE.2022-11-17T23-20-09Z
+#由于minio镜像下载失败，我改成了这样
+image: minio/minio
+```
+
+
 
 ## 1.2 安装CLI程序
 
