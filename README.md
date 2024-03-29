@@ -36,6 +36,8 @@ kubectl -n argo port-forward service/argo-server 2746:2746
 
 打开网页 https://localhost:2746
 
+
+
 卸载方式 `kubectl delete namespace argo`
 
 
@@ -47,6 +49,22 @@ image: minio/minio:RELEASE.2022-11-17T23-20-09Z
 #由于minio镜像下载失败，我改成了这样
 image: minio/minio
 ```
+
+minio网址
+
+```shell
+yantao@ubuntu20:~/go/src/argo-workflows/manifests$ kubectl get service -n argo minio
+NAME    TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)             AGE
+minio   ClusterIP   10.233.63.88   <none>        9000/TCP,9001/TCP   35m
+```
+
+http://10.233.63.88:9001
+
+账号是 admin
+
+密码是 password
+
+
 
 
 
